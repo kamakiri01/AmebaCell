@@ -1,95 +1,78 @@
-/*
- * スプライトを基点にした線分を生成するクラス
- * 100個オーダー以上生成するとSurface管理で非常に重くなるのでアメーバでは使わない
- */
-
-//var lineSurface = new Surface(enchant.Core.instance.width, enchant.Core.instance.height);
-
-var Line = enchant.Class.create(enchant.Sprite, {
-    initialize: function(e1, e2, color){
-        enchant.Sprite.call(this, enchant.Core.instance.width, enchant.Core.instance.height);
-
-//        if(Line.Collection != undefined){
-//            Line.prototype.lineSurface = 
-//                new Surface(enchant.Core.instance.width, enchant.Core.instance.height);
-//        }else{
-//        
-//        }
-//        //キャンバスの生成
-//        this.image = Line.prototype.lineSurface;
-//        this.sCtx = Line.prototype.lineSurface.context;
-//
-//        var sf = Line.prototype.lineSurface;
-
-        //基点の処理
-        this.point1 = e1;
-        this.point2 = e2;
-/*
-        //基点となるEntity
-        this.begin.x = this.point1.x;
-        this.begin.y = this.point1.y;
-
-        this.end.x = this.point2.x;
-        this.end.y = this.point2.y;
-*/
-
-//        this.sCtx = color;
-//        enchantのカラーテーブルからあとで拾ってくる
-        
-        this.addEventListener('exitframe', this.reflesh);
-    },
-
-   //最新の状態に描画する 
-    reflesh: function(){
-        
-        this.sCtx = this._layer._element.getContext('2d');
-        this.sCtx.fillText("foo", 50,50);
-        this.sCtx.beginPath();
-        //描画前にワイプする
-//        this.sCtx.clearRect(0,0,enchant.Core.instance.width, enchant.Core.instance.height);
-        //直線描画
-        this.sCtx.moveTo(this.point1.x + this.point1.width/2,
-                this.point1.y + this.point1.height/2);
-        this.sCtx.lineTo(this.point2.x + this.point2.width/2,
-                this.point2.y + this.point2.height/2);
-        this.sCtx.closePath();
-        this.sCtx.stroke();
-    
-            this.sCtx.fill();
-    }
-})
-
+var Geo = {};
 
 /*
  * 円描画クラス
  *
  */
-var Circle = enchant.Class.create(enchant.Sprite, {
-    initialize: function(rad){
+Geo.Circle = enchant.Class.create(enchant.Sprite, {
+    initialize: function(rad, color){
         enchant.Sprite.call(this, rad*2, rad*2);
-
-        //キャンバスの生成
         var sf = new Surface(rad*2, rad*2);
         this.image = sf;
         this.sCtx = sf.context;
-        
+        if(color === undefined){
+            color = 'rgba(192, 192, 192, 1)';
+        }
+        this.drawColor = color;
         this.reflesh(rad);
-
-        this.addEventListener('touchstart', function(){
-            console.log(this);
-        })
     },
     reflesh: function(rad){
-            this.sCtx.beginPath();
-            //描画前にワイプする
-            this.sCtx.clearRect(0,0,rad*2, rad*2);
-            //円弧描画
-            this.sCtx.beginPath();
-            this.sCtx.arc(rad, rad, rad, 0, Math.PI*2, true);
-            this.sCtx.arc(rad, rad, rad-1, 0, Math.PI*2, false);
-            this.sCtx.fill();
-            this.sCtx.closePath();
-//            this.sCtx.stroke();
+        this.sCtx.beginPath();
+        this.sCtx.clearRect(0,0,rad*2, rad*2);
+        this.sCtx.strokeStyle = this.drawColor;
+        this.sCtx.beginPath();
+        this.sCtx.arc(rad, rad, rad, 0, Math.PI*2, true);
+        this.sCtx.arc(rad, rad, rad-1, 0, Math.PI*2, false);
+        this.sCtx.fill();
+        this.sCtx.closePath();
+        this.sCtx.stroke();
     }
-})
-    
+});
+
+Geo.LineLayer = enchant.Class.create(enchant.Sprite, {
+    initialize: function(){
+        enchant.Sprite.call(this, 
+            enchant.Core.instance.width, 
+            enchant.Core.instance.height);  
+        var width = enchant.Core.instance.width;
+        var height = enchant.Core.instance.height;  
+        this.image = new Surface(width, height); 
+        this.compositeOperation = 'lighter';
+        var that = this;
+    },
+    areaWipe: function(){
+        var sCtx = this.image.context;
+        sCtx.clearRect(0,0,enchant.Core.instance.width, 
+            enchant.Core.instance.height);
+    }
+});
+
+//ラインの描画メソッド
+Geo.drawLine = function(e0, e1, param){
+    if(e0.type !== e1.type){return;}
+    var sCtx = Geo.LineLayer.collection[0].image.context;
+    sCtx.beginPath();
+    if(e0.isCapture === true && e1.isCapture){
+        sCtx.lineWidth = 3;
+    }else{
+        sCtx.lineWidth = 1;
+    }
+
+    var dx = e1.x - e0.x;
+    var dy = e1.y - e0.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+
+    //距離に応じた透過率でラインの描画を行う
+    if(dist!== 0 && e0.type == e1.type){
+        var strokeCol = (1 - dist/lineLength)*2;
+        var strokeColor = 'rgba(192, 80, 77, ';
+        //タイプで色分け
+        if(e0.type == 1){
+            strokeColor = 'rgba(80, 192, 77, ';
+        }
+        sCtx.strokeStyle = strokeColor + strokeCol+')';        
+        sCtx.moveTo(e0.x + e0.width/2, e0.y + e0.height/2);
+        sCtx.lineTo(e1.x + e1.width/2, e1.y + e1.height/2);
+        sCtx.stroke();
+    }
+};
