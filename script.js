@@ -28,7 +28,7 @@ window.onload = function() {
 
         //セル間の相互作用による運動
         game.rootScene.addEventListener('enterframe', function(){
-            if(duringCapture == false){
+            if(Cell.duringCapture == false){
                 //力積の生成
                 //相互に受ける力が同じとは限らないので全配列ループする
                 for(var i=0; i<numberOfNodes;i++){
