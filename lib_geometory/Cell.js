@@ -4,21 +4,29 @@
  *
  */
 var Geo = Geo;
-var lineLength = 80;
-var capLineLength = lineLength/2;
 var Cell = (function(){
         var linelayer = {};
+        var capLineLength = 40;
         var numberOfNodes = 200;
         var candi = [];
         var cL = 0;
         var candiBuf = [];
-
         var duringCapture = false;
         var userTouch = {
             x:0,    //捕獲範囲の中心
             y:0,
             capture:[], //捕獲されたセルのリスト
             capComed:false  //捕獲中の状態変数
+        };
+        var ForceConfigurations = {
+            nearRangeDist: 40, //近距離判定距離
+            farRangeDist: 200, //遠距離判定距離
+            nearRangeForce: 40, //近距離反発係数
+            farRangeForce: 30, //遠距離牽引計数
+            gregariousForce: 1, //集合性
+            accelerationScale: 1, //加速度スケール
+            randomScale: 0.2, //ランダム運動スケール
+            outToCentral: 0.1 //画面外からの中心力
         };
         var ForceMethods = (function(){
                 var calcForce = function(){
@@ -36,21 +44,22 @@ var Cell = (function(){
                                 var dist = Math.sqrt(dx * dx + dy * dy);
                                 //同種に近付く or 離れる
                                 //非常に近距離では反発する
-                                if(dist<40 && dist>1){
-                                    fx -= dx / dist / dist / dist * 40;
-                                    fy -= dy / dist / dist / dist * 40;
+                                //if(dist<40 && dist>1){
+                                if(dist<ForceConfigurations.nearRangeDist){
+                                    fx -= dx / dist / dist / dist * ForceConfigurations.nearRangeForce;
+                                    fy -= dy / dist / dist / dist * ForceConfigurations.nearRangeForce;
                                     //200以上離れていたら同じタイプで引き合う
-                                }else if(dist<200 && nd0.type === nd1.type){
-                                    fx += dx / dist / dist / dist * 30;
-                                    fy += dy / dist / dist / dist * 30;
+                                }else if(dist<ForceConfigurations.farRangeDist && nd0.type === nd1.type){
+                                    fx += dx / dist / dist / dist * ForceConfigurations.farRangeForce;
+                                    fy += dy / dist / dist / dist * ForceConfigurations.farRangeForce;
                                 }
                                 //なんとなく集合しようとする
                                 if(dist>1){
                                     var vx = nd1.vx;
                                     var vy = nd1.vy;
                                     var rad = Math.atan2(vy,vx);
-                                    fx += Math.cos(rad) /dist/dist;
-                                    fy += Math.sin(rad) /dist/dist;
+                                    fx += Math.cos(rad) / dist / dist * ForceConfigurations.gregariousForce;
+                                    fy += Math.sin(rad) / dist / dist * ForceConfigurations.gregariousForce;
                                 }
                                 //加速度を集積
                                 nd0.fx += fx;
@@ -60,12 +69,12 @@ var Cell = (function(){
                         //加速度をノーマライズ
                         var fdist = Math.sqrt(nd0.fx * nd0.fx + nd0.fy * nd0.fy);
                         if(fdist > 1){
-                            nd0.fx = nd0.fx/fdist;
-                            nd0.fy = nd0.fy/fdist;
+                            nd0.fx = nd0.fx / fdist * ForceConfigurations.accelerationScale;
+                            nd0.fy = nd0.fy / fdist * ForceConfigurations.accelerationScale;
                         }
                         //若干ランダムに運動
-                        nd0.fx += (Math.random()-0.5)*0.2;
-                        nd0.fy += (Math.random()-0.5)*0.2;
+                        nd0.fx += (Math.random()-0.5) * ForceConfigurations.randomScale;
+                        nd0.fy += (Math.random()-0.5) * ForceConfigurations.randomScale;
                     }
                 };
                 var applyForce = function(){
@@ -80,25 +89,23 @@ var Cell = (function(){
                             Cell.CellClass.collection[i].vx = vvx/vdist;
                             Cell.CellClass.collection[i].vy = vvy/vdist;
                         }
-
                         //画面外に出る速度がある場合速度を反転
                         var sumX = Cell.CellClass.collection[i].x + Cell.CellClass.collection[i].vx;
                         var sumY = Cell.CellClass.collection[i].y + Cell.CellClass.collection[i].vy;
-                        if(sumX < 5 || sumX > enchant.Core.instance.width-5){
-                            Cell.CellClass.collection[i].vx *= -1;
-                        }
-                        if(sumY < 5 || sumY > enchant.Core.instance.height-5){
-                            Cell.CellClass.collection[i].vy *= -1;
-                        }
-
+//                        if(sumX < 5 || sumX > enchant.Core.instance.width-5){
+//                            Cell.CellClass.collection[i].vx *= -1;
+//                        }
+//                        if(sumY < 5 || sumY > enchant.Core.instance.height-5){
+//                            Cell.CellClass.collection[i].vy *= -1;
+//                        }
                         //既に画面外にいる場合中心力をかける
                         sumX -= Cell.CellClass.collection[i].vx;
                         sumY -= Cell.CellClass.collection[i].vy;
                         if(sumX < 0 || sumX > enchant.Core.instance.width){
-                            Cell.CellClass.collection[i].vx = (enchant.Core.instance.width - sumX)/10;
+                            Cell.CellClass.collection[i].vx = (enchant.Core.instance.width - sumX) / ForceConfigurations.outToCentral;
                         }
                         if(sumY < 0 || sumY > enchant.Core.instance.height){
-                            Cell.CellClass.collection[i].vy = (enchant.Core.instance.height - sumY)/10;
+                            Cell.CellClass.collection[i].vy = (enchant.Core.instance.height - sumY)/ ForceConfigurations.outToCentral;
                         }
 
                         //クリック移動中は力積が適用されない（演算自体を飛ばしたほうが効率的）
@@ -259,13 +266,13 @@ var Cell = (function(){
             Cell.userTouch.capture = Cell.userTouch.capture.concat(Cell.candiBuf);
             Cell.candiBuf = [];
         }
-        var addNewCell = function(cell){
+        var addChildNewCell = function(cell){
             enchant.Core.instance.rootScene.addChild(cell);
         };
         var addNewCells = function(){
             for(var i=0; i<numberOfNodes;i++){
                 var cell = new Cell.CellClass();
-                addNewCell(cell);
+                addChildNewCell(cell);
             }
         }
         var getDistBetween2Cell = function(c1, c2){

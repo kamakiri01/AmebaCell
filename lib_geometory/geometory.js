@@ -46,6 +46,7 @@ Geo.LineLayer = enchant.Class.create(enchant.Sprite, {
             enchant.Core.instance.height);
     }
 });
+Geo.lineLength = 80;
 
 //ラインの描画メソッド
 Geo.drawLine = function(e0, e1, param){
@@ -64,7 +65,7 @@ Geo.drawLine = function(e0, e1, param){
 
     //距離に応じた透過率でラインの描画を行う
     if(dist!== 0 && e0.type == e1.type){
-        var strokeCol = (1 - dist/lineLength)*2;
+        var strokeCol = (1 - dist/Geo.lineLength)*2;
         var strokeColor = 'rgba(192, 80, 77, ';
         //タイプで色分け
         if(e0.type == 1){
