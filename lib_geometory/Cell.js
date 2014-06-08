@@ -11,7 +11,6 @@ var Cell = (function(){
         var numberOfNodes = 200;
         var candi = [];
         var cL = 0;
-        var frag = true;
         var candiBuf = [];
 
         var duringCapture = false;
@@ -24,11 +23,11 @@ var Cell = (function(){
         var ForceMethods = (function(){
                 var calcForce = function(){
                     //相互に受ける力が同じとは限らないので全配列ループする
-                    for(var i=0; i<Cell.numberOfNodes;i++){
+                    for(var i=0; i<numberOfNodes;i++){
                         //受ける加速度の積
                         var fx=0, fy=0;
                         var nd0 = Cell.CellClass.collection[i];
-                        for(var j=0; j<Cell.numberOfNodes;j++){
+                        for(var j=0; j<numberOfNodes;j++){
                             var nd1 = Cell.CellClass.collection[j];
                             if(i !== j && nd0 !== undefined && nd1 !== undefined){
                                 //距離の計算
@@ -70,7 +69,7 @@ var Cell = (function(){
                     }
                 };
                 var applyForce = function(){
-                    for(var i=0; i<Cell.numberOfNodes;i++){
+                    for(var i=0; i<numberOfNodes;i++){
                         Cell.CellClass.collection[i].vx += Cell.CellClass.collection[i].fx;
                         Cell.CellClass.collection[i].vy += Cell.CellClass.collection[i].fy;
                         var vvx =  Cell.CellClass.collection[i].vx;
@@ -131,14 +130,14 @@ var Cell = (function(){
         })()
         var addForceEvent = function(){
             enchant.Core.instance.rootScene.addEventListener("enterframe", function(){
-                    if(Cell.duringCapture === false){
+                    if(duringCapture === false){
                         //力積の生成
                         //相互に受ける力が同じとは限らないので全配列ループする
-                        Cell.ForceMethods.calcForce();
+                        ForceMethods.calcForce();
                         //力積の適用
-                        Cell.ForceMethods.applyForce();
+                        ForceMethods.applyForce();
                         //力積の適用項内だとクリック時の相対座標保持に問題がありそうなので、別個に処理
-                        Cell.ForceMethods.capturingCellsPosition();
+                        ForceMethods.capturingCellsPosition();
                     }
             });
         }
@@ -166,15 +165,15 @@ var Cell = (function(){
                 }
         });
         var addLineLayer = function(){
-            Cell.linelayer = new Geo.LineLayer(enchant.Core.instance.width, enchant.Core.instance.height);
-            enchant.Core.instance.rootScene.addChild(Cell.linelayer);
+            linelayer = new Geo.LineLayer(enchant.Core.instance.width, enchant.Core.instance.height);
+            enchant.Core.instance.rootScene.addChild(linelayer);
         };
         var addDrawLineEvent = function(){
             enchant.Core.instance.rootScene.addEventListener("enterframe", function(){
-                    Cell.linelayer.areaWipe();
+                    linelayer.areaWipe();
                     //重複描画を避ける
-                    for(var i=0; i<Cell.numberOfNodes;i++){
-                        for(var j=Cell.numberOfNodes-1; j>=i;j--){
+                    for(var i=0; i<numberOfNodes;i++){
+                        for(var j=numberOfNodes-1; j>=i;j--){
                             //描画メソッド
                             Geo.drawLine(Cell.CellClass.collection[i], Cell.CellClass.collection[j]);
                         }
@@ -186,7 +185,7 @@ var Cell = (function(){
             Cell.userTouch.x = e.x;
             Cell.userTouch.y = e.y;
             Cell.userTouch.capture = [];
-            Cell.duringCapture = true;
+            duringCapture = true;
         };
         var recetUserTouch = function(){
             Cell.userTouch.capture = [];
@@ -201,23 +200,21 @@ var Cell = (function(){
             return result;
         };
         var addmitCellToCandi = function(e){
-            for(var i=0;i<Cell.candi.length;i++){
-                var dx = Cell.candi[i].x - e.x;
-                var dy = Cell.candi[i].y - e.y;
+            for(var i=0;i<candi.length;i++){
+                var dx = candi[i].x - e.x;
+                var dy = candi[i].y - e.y;
                 var dist = Math.sqrt( Math.pow(dx, 2) + Math.pow(dy,2 ) );
                 //結合圏内のセルをリストに追加する
                 if(dist < capLineLength){
-                    Cell.candi[i].isCapture = true;
-                    Cell.userTouch.capture.push(Cell.candi[i]);
+                    candi[i].isCapture = true;
+                    Cell.userTouch.capture.push(candi[i]);
                 }
             }
         };
         var initDetectCellPhase = function(){
-            Cell.frag = true;
             Cell.candiBuf = [];
         };
         var endDetectCellPhase = function(){
-            Cell.frag = false;
             console.log("total capturing: " + Cell.userTouch.capture.length);
         }
         var captureLoopPhase = function(){
@@ -227,14 +224,14 @@ var Cell = (function(){
             //captureリスト全てに対して行う
             for(var i=0, ie=Cell.userTouch.capture.length;i<ie;i++){
                 //全てのcandiリストに対して行う
-                for(var j=0;j<Cell.candi.length;j++){
+                for(var j=0;j<candi.length;j++){
                     //同色のセルか確認
-                    if(Cell.candi[j].type === Cell.userTouch.capture[i].type){
-                        var dist = Cell.getDistBetween2Cell(Cell.candi[j], Cell.userTouch.capture[i]);
+                    if(candi[j].type === Cell.userTouch.capture[i].type){
+                        var dist = getDistBetween2Cell(candi[j], Cell.userTouch.capture[i]);
                         //candiリストの要素がcaptureリストの要素と近ければ捕獲する
                         if(dist !== 0 && dist < capLineLength){
                             //ノード内のセルと近ければ捕獲し、候補から外す
-                            Cell.addCellToCandiBuf(Cell.candi[j], j);
+                            addCellToCandiBuf(candi[j], j);
                         }
                     }
                 }
@@ -243,19 +240,19 @@ var Cell = (function(){
             if(Cell.candiBuf.length === 0){
                 console.log("no new capture");
                 //新しいセルが捕獲できなければ走査ループ終了
-                Cell.endDetectCellPhase();
+                endDetectCellPhase();
             }else{
                 console.log("new capture "+Cell.candiBuf.length);
                 //新しく捕獲したセルをリストに追加する
-                Cell.captureCandidateCells();
-                Cell.captureLoopPhase(); //再帰
+                captureCandidateCells();
+                captureLoopPhase(); //再帰
             }
         };
         //セルを捕獲予定リストに載せる
         var addCellToCandiBuf = function(destCell, n){
             destCell.isCapture = true;
             Cell.candiBuf.push(destCell);
-            Cell.candi.splice(n, 1);
+            candi.splice(n, 1);
         }
         //全ての捕獲予定セルを捕獲予定リストから確定捕獲リストに移す
         var captureCandidateCells = function(){
@@ -266,9 +263,9 @@ var Cell = (function(){
             enchant.Core.instance.rootScene.addChild(cell);
         };
         var addNewCells = function(){
-            for(var i=0; i<Cell.numberOfNodes;i++){
+            for(var i=0; i<numberOfNodes;i++){
                 var cell = new Cell.CellClass();
-                Cell.addNewCell(cell);
+                addNewCell(cell);
             }
         }
         var getDistBetween2Cell = function(c1, c2){
@@ -283,73 +280,53 @@ var Cell = (function(){
                 Cell.CellClass.collection[i].isCapture = false;
             }
         };
+        var addTouchEvent = function(){
+            //ユーザーイベント
+            //クリック終了で捕獲終了
+            enchant.Core.instance.rootScene.addEventListener('touchend', function(){
+                    //全てのセルの捕獲状態を初期化
+                    recetCellCapturingStatus();
+                    //ユーザー状態の初期化
+                    recetUserTouch();
+            });
+            //捕獲中はドラッグドロップ
+            enchant.Core.instance.rootScene.addEventListener('touchmove', function(e){
+                    Cell.userTouch.x = e.x;
+                    Cell.userTouch.y = e.y;
+            });
+            enchant.Core.instance.rootScene.addEventListener('touchstart', function(e){
+                    //ユーザー操作状態の初期化
+                    startUserTouch(e);
+                    //ディープコピーを作る
+                    candi = createDeepCopy();
+                    //結合距離の半分以内にいるセルをリストアップ
+                    addmitCellToCandi(e);
+                    //リストアップされたセル数を表示
+                    console.log("first: "+ Cell.userTouch.capture.length);
+                    //追加されたセルに結合しているセルを更にリストに追加する
+                    initDetectCellPhase();
+                    //近隣のセルがなくなるまで再帰的に探索する
+                    captureLoopPhase();
+                    //クリック時のマウス座標とセルの相対座標を保存する
+                    Cell.userTouchLength = Cell.userTouch.capture.length;
+                    for(var i=0;i<Cell.userTouchLength;i++){
+                        Cell.userTouch.capture[i].rVecX = Cell.userTouch.capture[i].x - Cell.userTouch.x;
+                        Cell.userTouch.capture[i].rVecY = Cell.userTouch.capture[i].y - Cell.userTouch.y;
+                    }
+                    Cell.userTouch.capComed = true;
+                    duringCapture = false;
+            });
+};
         return {
-            linelayer: linelayer,
-            numberOfNodes: numberOfNodes,
-            candi: candi,
-            cL: cL,
-            frag: frag,
             candiBuf: candiBuf,
-            duringCapture: duringCapture,
-            ForceMethods: ForceMethods,
             addForceEvent: addForceEvent,
             CellClass: CellClass,
             addLineLayer: addLineLayer,
             addDrawLineEvent: addDrawLineEvent,
             userTouch: userTouch,
-            startUserTouch: startUserTouch,
-            recetUserTouch: recetUserTouch,
-            createDeepCopy: createDeepCopy,
-            addmitCellToCandi: addmitCellToCandi,
-            initDetectCellPhase: initDetectCellPhase,
-            endDetectCellPhase: endDetectCellPhase,
-            addCellToCandiBuf: addCellToCandiBuf,
-            captureCandidateCells: captureCandidateCells,
-            captureLoopPhase: captureLoopPhase,
-            addNewCell: addNewCell,
             addNewCells: addNewCells,
-            getDistBetween2Cell: getDistBetween2Cell,
-            recetCellCapturingStatus: recetCellCapturingStatus
+            addTouchEvent: addTouchEvent
         
         };
 })();
 
-Cell.addTouchEvent = function(){
-    //ユーザーイベント
-    //クリック終了で捕獲終了
-    enchant.Core.instance.rootScene.addEventListener('touchend', function(){
-            //全てのセルの捕獲状態を初期化
-            Cell.recetCellCapturingStatus();
-            //ユーザー状態の初期化
-            Cell.recetUserTouch();
-    });
-    //捕獲中はドラッグドロップ
-    enchant.Core.instance.rootScene.addEventListener('touchmove', function(e){
-            Cell.userTouch.x = e.x;
-            Cell.userTouch.y = e.y;
-    });
-    enchant.Core.instance.rootScene.addEventListener('touchstart', function(e){
-            //ユーザー操作状態の初期化
-            Cell.startUserTouch(e);
-            //捕獲候補リストを先に作っておく
-            Cell.cL = Cell.CellClass.collection.length;
-            //ディープコピーを作る
-            Cell.candi = Cell.createDeepCopy();
-            //結合距離の半分以内にいるセルをリストアップ
-            Cell.addmitCellToCandi(e);
-            //リストアップされたセル数を表示
-            console.log("first: "+ Cell.userTouch.capture.length);
-            //追加されたセルに結合しているセルを更にリストに追加する
-            Cell.initDetectCellPhase();
-            //近隣のセルがなくなるまで再帰的に探索する
-            Cell.captureLoopPhase();
-            //クリック時のマウス座標とセルの相対座標を保存する
-            Cell.userTouchLength = Cell.userTouch.capture.length;
-            for(var i=0;i<Cell.userTouchLength;i++){
-                Cell.userTouch.capture[i].rVecX = Cell.userTouch.capture[i].x - Cell.userTouch.x;
-                Cell.userTouch.capture[i].rVecY = Cell.userTouch.capture[i].y - Cell.userTouch.y;
-            }
-            Cell.userTouch.capComed = true;
-            Cell.duringCapture = false;
-    });
-};
