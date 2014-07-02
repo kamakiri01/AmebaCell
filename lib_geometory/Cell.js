@@ -5,6 +5,8 @@
  */
 var Geo = Geo;
 var Cell = (function(){
+        var framerate = 0;
+        var lastDate = 0;
         var linelayer = {};
         var capLineLength = 40;
         var numberOfNodes = 200;
@@ -29,40 +31,40 @@ var Cell = (function(){
             outToCentralForce: 0.1 //画面外からの中心力
         };
         var ForceConfigurationMethods = (function(){
-            var setNearRangeDist = function(param){
-                ForceConfigurations.nearRangeDist = param;
-            };
-            var setFarRangeDist = function(param){
-                ForceConfigurations.farRangeDist = param;
-            };
-            var setNearRangeForce = function(param){
-                ForceConfigurations.nearRangeForce = param;
-            };
-            var setFarRangeForce = function(param){
-                ForceConfigurations.farRangeForce = param;
-            };
-            var setGregariousForce = function(param){
-                ForceConfigurations.gregariousForce = param;
-            };
-            var setAccelerationScale = function(param){
-                ForceConfigurations.accelerationScale = param;
-            };
-            var setRandomScale = function(param){
-                ForceConfigurations.randomScale = param;
-            };
-            var setOutToCentralForce = function(param){
-                ForceConfigurations.outToCentralForce = param;
-            };
-            return {
-                setNearRangeDist: setNearRangeForce,
-                setFarRangeDist: setFarRangeDist,
-                setNearRangeForce: setNearRangeForce,
-                setFarRangeForce: setFarRangeForce,
-                setGregariousForce: setGregariousForce,
-                setAccelerationScale: setAccelerationScale,
-                setRandomScale: setRandomScale,
-                setOutToCentralForce: setOutToCentralForce
-            }
+                var setNearRangeDist = function(param){
+                    ForceConfigurations.nearRangeDist = param;
+                };
+                var setFarRangeDist = function(param){
+                    ForceConfigurations.farRangeDist = param;
+                };
+                var setNearRangeForce = function(param){
+                    ForceConfigurations.nearRangeForce = param;
+                };
+                var setFarRangeForce = function(param){
+                    ForceConfigurations.farRangeForce = param;
+                };
+                var setGregariousForce = function(param){
+                    ForceConfigurations.gregariousForce = param;
+                };
+                var setAccelerationScale = function(param){
+                    ForceConfigurations.accelerationScale = param;
+                };
+                var setRandomScale = function(param){
+                    ForceConfigurations.randomScale = param;
+                };
+                var setOutToCentralForce = function(param){
+                    ForceConfigurations.outToCentralForce = param;
+                };
+                return {
+                    setNearRangeDist: setNearRangeForce,
+                    setFarRangeDist: setFarRangeDist,
+                    setNearRangeForce: setNearRangeForce,
+                    setFarRangeForce: setFarRangeForce,
+                    setGregariousForce: setGregariousForce,
+                    setAccelerationScale: setAccelerationScale,
+                    setRandomScale: setRandomScale,
+                    setOutToCentralForce: setOutToCentralForce
+                }
         })();
         var ForceMethods = (function(){
                 var calcForce = function(){
@@ -152,8 +154,8 @@ var Cell = (function(){
                             Cell.CellClass.collection[i].x += Cell.CellClass.collection[i].vx;
                             Cell.CellClass.collection[i].y += Cell.CellClass.collection[i].vy;
                             //整数値にならす(GPU環境では特に不要)
-//                            Cell.CellClass.collection[i].x = (Cell.CellClass.collection[i].x + 0.5) << 0;
-//                            Cell.CellClass.collection[i].y = (Cell.CellClass.collection[i].y + 0.5) << 0;
+                            //                            Cell.CellClass.collection[i].x = (Cell.CellClass.collection[i].x + 0.5) << 0;
+                            //                            Cell.CellClass.collection[i].y = (Cell.CellClass.collection[i].y + 0.5) << 0;
                         }
                     }
                 }
@@ -221,6 +223,14 @@ var Cell = (function(){
                             Geo.drawLine(Cell.CellClass.collection[i], Cell.CellClass.collection[j]);
                         }
                     }
+            });
+        }
+        var addFrameEvent = function(){
+            enchant.Core.instance.rootScene.addEventListener("enterframe", function(){
+                    var thisDate = new Date;
+                    var framedata = Math.round(1000 / (thisDate - lastDate));
+                    lastDate = thisDate;
+                    viewEnterframe(framedata);
             });
         }
         var startUserTouch = function(e){
@@ -367,10 +377,11 @@ var Cell = (function(){
             CellClass: CellClass,
             addLineLayer: addLineLayer,
             addDrawLineEvent: addDrawLineEvent,
+            addFrameEvent: addFrameEvent,
             userTouch: userTouch,
             addNewCells: addNewCells,
             addTouchEvent: addTouchEvent
-        
+
         };
 })();
 

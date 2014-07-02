@@ -1,6 +1,8 @@
 var Cell = Cell;
 var Geo = Geo;
 
+var viewEnterframe;
+
 enchant();
 window.onload = function() {
     var game = new Game(1124, 700);
@@ -22,8 +24,14 @@ window.onload = function() {
         Cell.addDrawLineEvent();
         //セル間の相互作用による運動の計算
         Cell.addForceEvent();
+        //フレーム処理
+        Cell.addFrameEvent();
     };
     $("#start").click(initCell);
+
+    viewEnterframe = function(num){
+        $("#frameCountNum").text(num + "/" + game.fps);
+    };
 
     var adittionOnClick = function(){
         Cell.ForceConfigurationMethods.setNearRangeDist(
