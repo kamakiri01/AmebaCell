@@ -9,7 +9,7 @@ Demo
 ------
 [contest ver](http://9leap.net/games/4187)
 
-[adjustable ver](http://phasespaces.net/garage/geometory/)
+[adjustable ver](http://yie.jp/garage/geometory/)
 
 Prize
 ------
